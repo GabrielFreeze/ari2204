@@ -8,10 +8,9 @@ def main():
     game = Game()
     while True:
         print(f'Your Hand: {game.state.player_hand}')
-        print(f'Nō of Aces: {game.state.player_aces}')
+        print(f'Ace-11:    {game.state.player_ace_11}')
         print('\n')
         print(f'Dealer Hand: {game.state.dealer_hand}')
-        print(f'Nō of Aces: {game.state.dealer_aces}')
         
         print('\n')
         x = input('Hit? (Y/N):')
@@ -22,7 +21,7 @@ def main():
         
         if not game.hit('player'):
             print(f'Your Hand: {game.state.player_hand}')
-            print(f'Nō of Aces: {game.state.player_aces}')
+            print(f'Ace-11:    {game.state.player_ace_11}')
             print('You Died')
             return
     
@@ -30,7 +29,6 @@ def main():
         x = game.hit('dealer')
 
         print(f'Dealer Hand: {game.state.dealer_hand}')
-        print(f'Nō of Aces: {game.state.dealer_aces}')
         print('\n')
 
         if not x:

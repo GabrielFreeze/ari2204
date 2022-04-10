@@ -4,17 +4,20 @@ import random
 class State:
 
     def __init__(self):
-        self.player_hand = 0
-        self.dealer_hand = 0    
+        self.player_hand = 0 #[12..20]
+        self.dealer_hand = 0 #[2..11]
+        self.player_ace_11 = False #[0,1]
 
-        self.player_aces = 0
-        self.dealer_aces = 0
+        #180 total different combinations
 
 
     def evaluate(self):
         print(f'PLAYER:{self.player_hand}\t DEALER:{self.dealer_hand}')
         
-        if self.player_hand == self.dealer_hand: return 'DRAW'        
+        if self.player_hand > 21: return 'LOSE'
+        if self.dealer_hand > 21: return 'WIN'
+        if self.player_hand == self.dealer_hand: return 'DRAW'
+
         return ['WIN','LOSE'][self.player_hand < self.dealer_hand]
 
 
@@ -22,12 +25,16 @@ class State:
 class Game:
 
     def __init__(self):
-        #Card:  2 3 4 5 6 7 8 9 10  J  Q  K  A 
-        #Points:2 3 4 5 6 7 8 9 10 10 10 10 11
-        self.deck = [2,3,4,5,6,7,8,9,10,10,10,10,11]*4
+        #Card:  A 2 3 4 5 6 7 8 9 10  J  Q  K 
+        #Points:1 2 3 4 5 6 7 8 9 10 10 10 10
+        self.deck = [1,2,3,4,5,6,7,8,9,10,10,10,10]*4
         
-        #By default an Ace is worth 11. When a hand exceeds 21, 
-        #any aces are reduced to 1 in order to attempt to avoid a bust.
+        #By default an Ace is worth 1. If its possible (sum is 10 or less)
+        #..an Ace in the player/dealer's hand can be worth 11. If the sum exceeds
+        #21, then the Ace can be demoted back to 1. In any hand, only one Ace can ever be worth 11.
+        
+        #We won't store this variable in the agent state.
+        self.dealer_ace_11 = False
 
         self.state = State()
 
@@ -37,7 +44,6 @@ class Game:
         self.hit('dealer')
         self.hit('player')
         
-        
 
     def hit(self, who):
         
@@ -45,54 +51,65 @@ class Game:
 
         if who == 'player':
 
-            #Increment ace count if ace is envountered
-            if card == 11: self.state.player_aces += 1
+            #Attempt to represent the Ace as 11.
+            if card == 1 and self.state.player_hand < 11:
+                self.state.player_hand += 11
+                self.state.player_ace_11 = True
 
-            #Add card to 
-            self.state.player_hand += card
+            #Take face value. (Ace = 1)
+            else:
 
-            #If the hand is over 21, attempt to reduce aces to avoid a bust.
-            if self.state.player_hand > 21:
-                
-                #Use the least number of aces (if any) in order to avoid a bust.
-                while self.state.player_aces != 0:
-                    self.state.player_hand -= 10
-                    self.state.player_aces -= 1
+                self.state.player_hand += card
 
-                    if self.state.player_hand <= 21: return True
+                #Did the new card make the sum go over 21?
+                if self.state.player_hand > 21:
 
-            #Otherwise, the hand is valid.
-            else: return True
+                    #Can we demote an 11-Ace to represent 1 in order to avoid busting?
+                    if self.state.player_ace_11:
+                        self.state.player_hand -= 10
+                        self.state.player_ace_11 = False
+                    
+                    #If not, then the hand went over 21.
+                    else:
+                        return False
+            
+            return True
 
-            #The hand was not lowered to 21 or less because 
-            #otherwise it would have been returned in the loop.
-            return False  
 
-        elif who == 'dealer':
-            #Increment ace count if ace is envountered
-            if card == 11: self.state.dealer_aces += 1
 
-            #Add card to 
-            self.state.dealer_hand += card
+        if who == 'dealer':
 
-            #If the hand is over 21, attempt to reduce aces to avoid a bust.
-            if self.state.dealer_hand > 21:
-                
-                #Use the least number of aces (if any) in order to avoid a bust.
-                while self.state.dealer_aces != 0:
-                    self.state.dealer_hand -= 10
-                    self.state.dealer_aces -= 1
+            #Attempt to represent the Ace as 11.
+            if card == 1 and self.state.dealer_hand < 11:
+                self.state.dealer_hand += 11
+                self.dealer_ace_11 = True
 
-                    if self.state.dealer_hand <= 21: return True
+            #Take face value. (Ace = 1)
+            else:
 
-            #Otherwise, the hand is valid.
-            else: return True
+                self.state.dealer_hand += card
 
-            #The hand was not lowered to 21 or less because 
-            #otherwise it would have been returned in the loop.
-            return False
+                #Did the new card make the sum go over 21?
+                if self.state.dealer_hand > 21:
+
+                    #Can we demote an 11-Ace to represent 1 in order to avoid busting?
+                    if self.dealer_ace_11:
+                        self.state.dealer_hand -= 10
+                        self.dealer_ace_11 = False
+                    
+                    #If not, then the hand went over 21.
+                    else:
+                        return False
+            
+            return True
 
         raise Exception('Invalid Player')
+
+
+    def policy(self):
+        #True  -> Hit
+        #False -> Stand
+        return bool(random.randint(0,1))
 
 
     def getState(self):
