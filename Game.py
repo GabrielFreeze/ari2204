@@ -1,28 +1,14 @@
 import random
-
-
-class State:
-
-    def __init__(self):
-        self.player_hand = 0 #[12..20]
-        self.dealer_hand = 0 #[2..11]
-        self.player_ace_11 = False #[0,1]
-
-        #180 total different combinations
-
-
-    def evaluate(self):
-        print(f'PLAYER:{self.player_hand}\t DEALER:{self.dealer_hand}')
-        
-        if self.player_hand > 21: return 'LOSE'
-        if self.dealer_hand > 21: return 'WIN'
-        if self.player_hand == self.dealer_hand: return 'DRAW'
-
-        return ['WIN','LOSE'][self.player_hand < self.dealer_hand]
+from Model import Model
+from State import State
 
 
 
 class Game:
+
+    first_state = True
+
+
 
     def __init__(self):
         #Card:  A 2 3 4 5 6 7 8 9 10  J  Q  K 
@@ -44,7 +30,6 @@ class Game:
         self.hit('dealer')
         self.hit('player')
         
-
     def hit(self, who):
         
         card = self.deck.pop()
@@ -105,15 +90,12 @@ class Game:
 
         raise Exception('Invalid Player')
 
-
-    def policy(self):
-        #True  -> Hit
-        #False -> Stand
-        return bool(random.randint(0,1))
-
-
     def getState(self):
         return self.state
+
+
+
+
 
 
 
