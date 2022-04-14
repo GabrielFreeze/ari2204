@@ -1,5 +1,5 @@
 import random
-from Model import Model
+from copy import deepcopy
 from State import State
 
 
@@ -14,6 +14,7 @@ class Game:
         #Card:  A 2 3 4 5 6 7 8 9 10  J  Q  K 
         #Points:1 2 3 4 5 6 7 8 9 10 10 10 10
         self.deck = [1,2,3,4,5,6,7,8,9,10,10,10,10]*4
+        
         
         #By default an Ace is worth 1. If its possible (sum is 10 or less)
         #..an Ace in the player/dealer's hand can be worth 11. If the sum exceeds
@@ -33,6 +34,7 @@ class Game:
     def hit(self, who):
         
         card = self.deck.pop()
+        
 
         if who == 'player':
 
@@ -91,7 +93,7 @@ class Game:
         raise Exception('Invalid Player')
 
     def getState(self):
-        return self.state
+        return deepcopy(self.state)
 
 
 

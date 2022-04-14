@@ -1,8 +1,11 @@
 from Game import Game
 from Model import Model
 from State import State
+from time import time
 
 def run_episodes(episode_count, policy, ε='', exploring_starts=False):
+        start = time()
+        
         win_counter  = 0
         lose_counter = 0
         draw_counter = 0
@@ -14,9 +17,7 @@ def run_episodes(episode_count, policy, ε='', exploring_starts=False):
 
             game = Game()
             
-            # print(f'Player Hand: {game.state.player_hand}')
-
-            #PLayer's moves
+            #Player's moves
             while True:
 
                 #The optimal strategy is to always hit 
@@ -30,46 +31,38 @@ def run_episodes(episode_count, policy, ε='', exploring_starts=False):
                     break #Stand
                 
                 else: #Choose an action based on the policy
+                    
+                    current_state = game.getState()
 
                     if   policy == 'random':     hit = model.random_policy()
-                    elif policy == 'montecarlo': hit = model.montecarlo_policy(game.getState(), i+1, ε, exploring_starts)
+                    elif policy == 'montecarlo': hit = model.montecarlo_policy(current_state, i+1, ε, exploring_starts)
                     elif policy == 'sarsa':      hit = model.sarsa_policy()
                     elif policy == 'qlearning':  hit = model.qlearning()
 
-                    
                     #Keep track of state-action.
-                    model.update_count(game.getState(), hit)
-
+                    model.increment_count(current_state, hit)
 
                     #If the action was to hit
                     if hit:
 
                         #If player went over 21
                         if not game.hit('player'):
-                            # print(f'Player Hand: {game.state.player_hand}')
                             lost = True
-                            
                             break
 
                     else: 
                         break #Stand
                     
 
-                # print(f'Player Hand: {game.state.player_hand}')
-
             #If the while loop exited then the (player's) episode is finished.
-            #Set the sum to 22 so game.state.evaluate would say the player lost
+
+            #If the player lost, set the sum to 22 so game.state.evaluate would return LOST.
             if lost: game.state.player_hand = 22
-            # print('\n')
             
             #Dealer's moves
             while not lost and game.state.dealer_hand < 17:
-                x = game.hit('dealer')
 
-                # print(f'Dealer Hand: {game.state.dealer_hand}')
-                # print('\n')
-
-                if not x:
+                if not game.hit('dealer'):
                     break             
                 
             #Update finished episode values.
@@ -88,7 +81,9 @@ def run_episodes(episode_count, policy, ε='', exploring_starts=False):
 
             model.prepare_next_episode()
         
-        print(len(model.model))
+        print(f'Time: {round(time()-start,2)}s')
+        # for m in model.model:
+        #     print(m.state.player_hand,m.state.dealer_hand,m.state.player_ace_11)
         # for key,value in model.model.items():
         #     print(key.player_hand,value)
         return (win_counter, lose_counter, draw_counter)
@@ -96,8 +91,11 @@ def run_episodes(episode_count, policy, ε='', exploring_starts=False):
 
 
 def main():
-
-    episode_count = 500
+    episode_count = 100_000
+    
+    win,lose,draw = run_episodes(episode_count=episode_count, policy='random')
+    win_rate = (win/episode_count) * 100
+    print(f'Random: {win_rate}%')
 
     win,lose,draw = run_episodes(episode_count=episode_count, policy='montecarlo', ε='1/k', exploring_starts = True)
     win_rate = (win/episode_count) * 100
@@ -115,9 +113,7 @@ def main():
     win_rate = (win/episode_count) * 100
     print(f'MonteCarlo 4: {win_rate}%')
 
-    win,lose,draw = run_episodes(episode_count=episode_count, policy='random')
-    win_rate = (win/episode_count) * 100
-    print(f'Random: {win_rate}%')
+    
     
     # s1 = State()
     # s1.player_hand = 1

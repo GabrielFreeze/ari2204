@@ -8,6 +8,7 @@ class State:
         #180 total different combinations
 
 
+
     def evaluate(self):
         if self.player_hand > 21: return 'LOSE'
         if self.dealer_hand > 21: return 'WIN'
