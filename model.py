@@ -1,4 +1,5 @@
 from cmath import exp
+from Game import Game
 from State import State
 from StateMetric import StateMetric
 import random
@@ -11,6 +12,9 @@ class Model:
         #Used during montecarlo
         self.first_pass = True
 
+        #Used during SARSA
+        self.previous_state_action = None
+
     def update_episode(self, win:bool):
 
         for (_,a,index) in self.episode:
@@ -21,6 +25,7 @@ class Model:
 
     def prepare_next_episode(self):
         self.first_pass = True
+        self.previous_state_action = None
 
     def seen(self, s1:State):
         # print('Matching state',s1.player_hand)
@@ -47,7 +52,6 @@ class Model:
         #Keep reference to position in model for O(1) look-up time.
         self.episode.append((s,hit,index))
 
-
     def random_policy(self):
         #True  -> Hit
         #False -> Stand
@@ -57,10 +61,6 @@ class Model:
         
         if exploring_starts and ε != '1/k':
             raise Exception('Invalid Parameters in montecarlo_policy')
-
-        if not exploring_starts and ε != '1/k' and ε != '1/ek1000' and ε != '1/ek10000':
-            raise Exception('Invalid Parameters in montecarlo_policy')
-
 
         #Due to the nature of the game, the underlying blackjack MDP can never have cycles,
         #since the only time your hand value decreases, the boolean player_ace_11 is switched on.
@@ -73,13 +73,14 @@ class Model:
 
         #Otherwise, select action randomly with probability ε
 
-        if   ε == '1/k':       P = 1/k
+        if   ε == '0.1':       P = 0.1
+        elif ε == '1/k':       P = 1/k
         elif ε == '1/ek1000':  P = exp(-k/1000).real
         elif ε == '1/ek10000': P = exp(-k/10000).real
+        else: raise Exception('Invalid Paramaters in montecarlo_poloicy') 
 
         #Select action randomly
-        x = random.random() 
-        if x <= P:
+        if random.random() <= P:
             return self.random_policy()
         
         #Or explore greedily
@@ -111,6 +112,22 @@ class Model:
             else:
                 return self.random_policy()
 
+
+
+       
+
+        
+
+        
+
+        
+            
+
+
+        pass
+
+
+        
 
 
 

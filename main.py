@@ -3,7 +3,7 @@ from Model import Model
 from State import State
 from time import time
 
-def run_episodes(episode_count, policy, ε='', exploring_starts=False):
+def run_episodes_montecarlo(episode_count, ε='', exploring_starts=False):
         start = time()
         
         win_counter  = 0
@@ -11,6 +11,7 @@ def run_episodes(episode_count, policy, ε='', exploring_starts=False):
         draw_counter = 0
 
         model = Model()
+       
 
         for i in range(episode_count):
             lost = False
@@ -34,10 +35,7 @@ def run_episodes(episode_count, policy, ε='', exploring_starts=False):
                     
                     current_state = game.getState()
 
-                    if   policy == 'random':     hit = model.random_policy()
-                    elif policy == 'montecarlo': hit = model.montecarlo_policy(current_state, i+1, ε, exploring_starts)
-                    elif policy == 'sarsa':      hit = model.sarsa_policy()
-                    elif policy == 'qlearning':  hit = model.qlearning()
+                    hit = model.montecarlo_policy(current_state, i+1, ε, exploring_starts)
 
                     #Keep track of state-action.
                     model.increment_count(current_state, hit)
@@ -65,9 +63,10 @@ def run_episodes(episode_count, policy, ε='', exploring_starts=False):
                 if not game.hit('dealer'):
                     break             
                 
-            #Update finished episode values.
             outcome = game.state.evaluate()
             
+            #Update finished episode values if in montecarlo.
+
             if outcome == 'WIN':
                 model.update_episode(win=True)
                 win_counter += 1
@@ -82,56 +81,253 @@ def run_episodes(episode_count, policy, ε='', exploring_starts=False):
             model.prepare_next_episode()
         
         print(f'Time: {round(time()-start,2)}s')
-        # for m in model.model:
-        #     print(m.state.player_hand,m.state.dealer_hand,m.state.player_ace_11)
-        # for key,value in model.model.items():
-        #     print(key.player_hand,value)
-        return (win_counter, lose_counter, draw_counter)
-        
 
+        return (win_counter, lose_counter, draw_counter)
+
+def run_episodes_random(episode_count):
+        start = time()
+        
+        win_counter  = 0
+        lose_counter = 0
+        draw_counter = 0
+
+        model = Model()
+       
+
+        for i in range(episode_count):
+            lost = False
+
+            game = Game()
+            
+            #Player's moves
+            while True:
+
+                #The optimal strategy is to always hit 
+                #when less than 12 and stand when equal to 21.
+                if game.state.player_hand  < 12:
+                    #The player cannot lose if sum is less than 12
+                    game.hit('player') 
+                        
+                    
+                elif game.state.player_hand == 21:
+                    break #Stand
+                
+                else: #Choose an action based on the policy
+                    
+                    current_state = game.getState()
+
+                    hit = model.random_policy()
+
+                    #Keep track of state-action.
+                    model.increment_count(current_state, hit)
+
+                    #If the action was to hit
+                    if hit:
+
+                        #If player went over 21
+                        if not game.hit('player'):
+                            lost = True
+                            break
+
+                    else: 
+                        break #Stand
+                    
+
+            #If the while loop exited then the (player's) episode is finished.
+
+            #If the player lost, set the sum to 22 so game.state.evaluate would return LOST.
+            if lost: game.state.player_hand = 22
+            
+            #Dealer's moves
+            while not lost and game.state.dealer_hand < 17:
+
+                if not game.hit('dealer'):
+                    break             
+                
+            outcome = game.state.evaluate()
+            
+            #Update finished episode values if in montecarlo.
+
+            if outcome == 'WIN':
+                model.update_episode(win=True)
+                win_counter += 1
+            
+            elif outcome == 'LOSE':
+                model.update_episode(win=False)
+                lose_counter += 1
+            
+            else:
+                draw_counter += 1
+
+
+            model.prepare_next_episode()
+        
+        print(f'Time: {round(time()-start,2)}s')
+
+        return (win_counter, lose_counter, draw_counter)
+
+def run_episodes_sarsa(episode_count, ε=''):
+    start = time()
+        
+    win_counter  = 0
+    lose_counter = 0
+    draw_counter = 0
+
+    model = Model()
+    
+
+    for i in range(episode_count):
+        lost = False
+
+        game = Game()
+        
+        #Player's moves
+        while True:
+
+            #The optimal strategy is to always hit 
+            #when less than 12 and stand when equal to 21.
+            if game.state.player_hand < 12: game.hit('player') 
+            
+            elif game.state.player_hand == 21: break #Stand
+            
+            else: #Choose an action based on the policy
+                
+                current_state = game.getState()
+
+                #Choose action with best value.
+                hit = model.montecarlo_policy(current_state, i+1, ε)
+
+                #Keep track of state-action.
+                model.increment_count(current_state, hit)
+
+                #If the action was to hit
+                if hit:
+                    if not game.hit('player'): #Player went over 21
+                        lost = True
+                        break
+                else: break # Stand
+                    
+                #Update the previous state using the current one
+                if model.previous_state_action is not None:
+                    
+                    previous_state = model.previous_state_action[0]
+                    previous_hit = model.previous_state_action[0]
+
+                    #The reward will always be 0 as the current_state is not terminal.
+                    R = 0
+
+                    #We know that the previous state_action is seen.
+                    previous_index = model.seen(previous_state)
+                    previous_q_sa = model.model[previous_index].hit_value if previous_hit else model.model[previous_index].stand_value
+
+                    previous_hit_count   = model.model[previous_index].hit_count
+                    previous_stand_count = model.model[previous_index].stand_count
+
+                    current_index = model.seen(current_state)
+                    current_q_sa = model.model[current_index].hit_value if hit else model.model[current_index].stand_value
+
+                    if previous_hit: model.model[previous_index].hit_value   += (R + current_q_sa - previous_q_sa)/(1+previous_hit_count)    
+                    else:            model.model[previous_index].stand_value += (R + current_q_sa - previous_q_sa)/(1+previous_stand_count)
+
+                    
+                #Update previous state_action.
+                model.previous_state_action = (current_state,hit)
+                
+
+        #If the while loop exited then the (player's) episode is finished.
+
+        #If the player lost, set the sum to 22 so game.state.evaluate would return LOST.
+        if lost: game.state.player_hand = 22
+        
+        #Dealer's moves.
+        while not lost and game.state.dealer_hand < 17:
+            if not game.hit('dealer'): break   
+
+            
+        #Evaluate outcome.
+        outcome = game.state.evaluate()
+
+        #Update previous state-action value using the current state-action and outcome.
+        if model.previous_state_action is not None:
+            if lost: R = -1
+            elif outcome == 'WIN': R = +1
+            else: R = 0
+
+            #Previous state-action
+            previous_state = model.previous_state_action[0]
+            previous_hit = model.previous_state_action[0]
+
+            #We know that the previous state_action is seen.
+            previous_index = model.seen(previous_state)
+            previous_q_sa = model.model[previous_index].hit_value if previous_hit else model.model[previous_index].stand_value
+
+            previous_hit_count   = model.model[previous_index].hit_count
+            previous_stand_count = model.model[previous_index].stand_count
+
+            current_index = model.seen(current_state)
+            current_q_sa = model.model[current_index].hit_value if hit else model.model[current_index].stand_value
+
+            if previous_hit: model.model[previous_index].hit_value   += (R + current_q_sa - previous_q_sa)/(1+previous_hit_count)    
+            else:            model.model[previous_index].stand_value += (R + current_q_sa - previous_q_sa)/(1+previous_stand_count)
+
+
+
+        if outcome == 'WIN':
+                model.update_episode(win=True)
+                win_counter += 1
+            
+        elif outcome == 'LOSE':
+            model.update_episode(win=False)
+            lose_counter += 1
+        
+        else:
+            draw_counter += 1    
+
+
+    print(f'Time: {round(time()-start,2)}s')
+
+
+
+    return (win_counter, lose_counter, draw_counter)
 
 def main():
     episode_count = 100_000
+
+    win,lose,draw = run_episodes_random(episode_count=episode_count)
+    win_rate = (win/episode_count) * 100
+    print(f'Random: {round(win_rate,2)}%')
+
+    win,lose,draw = run_episodes_montecarlo(episode_count=episode_count, ε='1/k', exploring_starts = True)
+    win_rate = (win/episode_count) * 100
+    print(f'MonteCarlo 1: {round(win_rate,2)}%')
+
+    win,lose,draw = run_episodes_montecarlo(episode_count=episode_count, ε='1/k')
+    win_rate = (win/episode_count) * 100
+    print(f'MonteCarlo 2: {round(win_rate,2)}%')
+
+    win,lose,draw = run_episodes_montecarlo(episode_count=episode_count, ε='1/ek1000')
+    win_rate = (win/episode_count) * 100
+    print(f'MonteCarlo 3: {round(win_rate,2)}%')
+
+    win,lose,draw = run_episodes_montecarlo(episode_count=episode_count, ε='1/ek10000')
+    win_rate = (win/episode_count) * 100
+    print(f'MonteCarlo 4: {round(win_rate,2)}%')
     
-    win,lose,draw = run_episodes(episode_count=episode_count, policy='random')
+    win,lose,draw = run_episodes_sarsa(episode_count=episode_count, ε='0.1')
     win_rate = (win/episode_count) * 100
-    print(f'Random: {win_rate}%')
+    print(f'SARSA 1: {round(win_rate,2)}%')
 
-    win,lose,draw = run_episodes(episode_count=episode_count, policy='montecarlo', ε='1/k', exploring_starts = True)
+    win,lose,draw = run_episodes_sarsa(episode_count=episode_count, ε='1/k')
     win_rate = (win/episode_count) * 100
-    print(f'MonteCarlo 1: {win_rate}%')
+    print(f'SARSA 2: {round(win_rate,2)}%')
 
-    win,lose,draw = run_episodes(episode_count=episode_count, policy='montecarlo', ε='1/k')
+    win,lose,draw = run_episodes_sarsa(episode_count=episode_count, ε='1/ek1000')
     win_rate = (win/episode_count) * 100
-    print(f'MonteCarlo 2: {win_rate}%')
+    print(f'SARSA 3: {round(win_rate,2)}%')
 
-    win,lose,draw = run_episodes(episode_count=episode_count, policy='montecarlo', ε='1/ek1000')
+    win,lose,draw = run_episodes_sarsa(episode_count=episode_count, ε='1/ek10000')
     win_rate = (win/episode_count) * 100
-    print(f'MonteCarlo 3: {win_rate}%')
-
-    win,lose,draw = run_episodes(episode_count=episode_count, policy='montecarlo', ε='1/ek10000')
-    win_rate = (win/episode_count) * 100
-    print(f'MonteCarlo 4: {win_rate}%')
-
-    
-    
-    # s1 = State()
-    # s1.player_hand = 1
-    # s1.dealer_hand = 1
-    # s1.player_ace_11 = 1
-
-    # s2 = State()
-    # s2.player_hand = 1
-    # s2.dealer_hand = 1
-    # s2.player_ace_11 = 1
-
-    # x = (s1.player_hand, s1.dealer_hand, s1.player_ace_11)
-    # y = (s2.player_hand, s2.dealer_hand, s2.player_ace_11)
-
-    # # print(x,y)
-    # print(hash(x),hash(y))
-
-
+    print(f'SARSA 4: {round(win_rate,2)}%')
 
 
 
