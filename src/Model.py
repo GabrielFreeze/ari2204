@@ -59,7 +59,7 @@ class Model:
 
     def montecarlo_policy(self, s, k, ε, exploring_starts = False):
         
-        if exploring_starts and ε != '1/k':
+        if exploring_starts and ε != '1-k':
             raise Exception('Invalid Parameters in montecarlo_policy')
 
         #Due to the nature of the game, the underlying blackjack MDP can never have cycles,
@@ -74,9 +74,9 @@ class Model:
         #Otherwise, select action randomly with probability ε
 
         if   ε == '0.1':       P = 0.1
-        elif ε == '1/k':       P = 1/k
-        elif ε == '1/ek1000':  P = exp(-k/1000).real
-        elif ε == '1/ek10000': P = exp(-k/10000).real
+        elif ε == '1-k':       P = 1/k
+        elif ε == '1-ek1000':  P = exp(-k/1000).real
+        elif ε == '1-ek10000': P = exp(-k/10000).real
         else: raise Exception('Invalid Paramaters in montecarlo_poloicy') 
 
         #Select action randomly
