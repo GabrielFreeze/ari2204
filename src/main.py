@@ -131,12 +131,9 @@ def run_episodes_montecarlo(episode_count, ε='', exploring_starts=False):
                 q_sa = state_metric.hit_value / selected
                 data.append([ph,dh,pa,'HIT',selected,q_sa])
         
-        pd.DataFrame(data,columns=['Player Hand','Dealer Hand','Action','Player Ace 11','Times Selected','Q Value']).to_csv(os.path.join(path,filename_sa),index=False)
+        pd.DataFrame(data,columns=['Player Hand','Dealer Hand','Player Ace 11','Action','Times Selected','Q Value']).to_csv(os.path.join(path,filename_sa),index=False)
             
         
-
-
-
 
 
         return (win_counter, lose_counter, draw_counter)
@@ -267,7 +264,7 @@ def run_episodes_random(episode_count):
                 q_sa = state_metric.hit_value / selected
                 data.append([ph,dh,pa,'HIT',selected,q_sa])
         
-        pd.DataFrame(data,columns=['Player Hand','Dealer Hand','Action','Player Ace 11','Times Selected','Q Value']).to_csv(os.path.join(path,filename_sa),index=False)
+        pd.DataFrame(data,columns=['Player Hand','Dealer Hand','Player Ace 11','Action','Times Selected','Q Value']).to_csv(os.path.join(path,filename_sa),index=False)
 
 
 
@@ -439,7 +436,7 @@ def run_episodes_sarsa(episode_count, ε=''):
             q_sa = state_metric.hit_value / selected
             data.append([ph,dh,pa,'HIT',selected,q_sa])
         
-    pd.DataFrame(data,columns=['Player Hand','Dealer Hand','Action','Player Ace 11','Times Selected','Q Value']).to_csv(os.path.join(path,filename_sa),index=False)
+    pd.DataFrame(data,columns=['Player Hand','Dealer Hand','Player Ace 11','Action','Times Selected','Q Value']).to_csv(os.path.join(path,filename_sa),index=False)
 
 
     return (win_counter, lose_counter, draw_counter)
@@ -612,7 +609,7 @@ def run_episodes_qlearning(episode_count, ε=''):
             data.append([ph,dh,pa,'HIT',selected,q_sa])
 
 
-    pd.DataFrame(data,columns=['Player Hand','Dealer Hand','Action','Player Ace 11','Times Selected','Q Value']).to_csv(os.path.join(path,filename_sa),index=False)
+    pd.DataFrame(data,columns=['Player Hand','Dealer Hand','Player Ace 11','Action','Times Selected','Q Value']).to_csv(os.path.join(path,filename_sa),index=False)
 
 
     return (win_counter, lose_counter, draw_counter)
@@ -622,28 +619,28 @@ def run_episodes_qlearning(episode_count, ε=''):
 def main():
     episode_count = 500_000
 
-    #Random
-    # win,lose,draw = run_episodes_random(episode_count=episode_count)
-    # win_rate = (win/episode_count) * 100
-    # print(f'Random: {round(win_rate,2)}%')
+    # Random
+    win,lose,draw = run_episodes_random(episode_count=episode_count)
+    win_rate = (win/episode_count) * 100
+    print(f'Random: {round(win_rate,2)}%')
 
 
-    #Montcarlo
-    # win,lose,draw = run_episodes_montecarlo(episode_count=episode_count, ε='1-k', exploring_starts = True)
-    # win_rate = (win/episode_count) * 100
-    # print(f'MonteCarlo 1: {round(win_rate,2)}%')
+    # Montcarlo
+    win,lose,draw = run_episodes_montecarlo(episode_count=episode_count, ε='1-k', exploring_starts = True)
+    win_rate = (win/episode_count) * 100
+    print(f'MonteCarlo 1: {round(win_rate,2)}%')
 
-    # win,lose,draw = run_episodes_montecarlo(episode_count=episode_count, ε='1-k')
-    # win_rate = (win/episode_count) * 100
-    # print(f'MonteCarlo 2: {round(win_rate,2)}%')
+    win,lose,draw = run_episodes_montecarlo(episode_count=episode_count, ε='1-k')
+    win_rate = (win/episode_count) * 100
+    print(f'MonteCarlo 2: {round(win_rate,2)}%')
 
-    # win,lose,draw = run_episodes_montecarlo(episode_count=episode_count, ε='1-ek1000')
-    # win_rate = (win/episode_count) * 100
-    # print(f'MonteCarlo 3: {round(win_rate,2)}%')
+    win,lose,draw = run_episodes_montecarlo(episode_count=episode_count, ε='1-ek1000')
+    win_rate = (win/episode_count) * 100
+    print(f'MonteCarlo 3: {round(win_rate,2)}%')
 
-    # win,lose,draw = run_episodes_montecarlo(episode_count=episode_count, ε='1-ek10000')
-    # win_rate = (win/episode_count) * 100
-    # print(f'MonteCarlo 4: {round(win_rate,2)}%')
+    win,lose,draw = run_episodes_montecarlo(episode_count=episode_count, ε='1-ek10000')
+    win_rate = (win/episode_count) * 100
+    print(f'MonteCarlo 4: {round(win_rate,2)}%')
     
 
 
